@@ -6,6 +6,7 @@ import {
   set,
   get,
   child,
+  remove,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const workoutPlan = {
@@ -163,6 +164,7 @@ const loginStatus = document.getElementById("loginStatus");
 const modeSignIn = document.getElementById("modeSignIn");
 const modeRegister = document.getElementById("modeRegister");
 const confirmPasswordWrap = document.getElementById("confirmPasswordWrap");
+const rememberMe = document.getElementById("rememberMe");
 const analyticsSessions = document.getElementById("analyticsSessions");
 const analyticsVolume = document.getElementById("analyticsVolume");
 const analyticsSets = document.getElementById("analyticsSets");
@@ -251,7 +253,7 @@ if (logForm) {
 }
 
 async function saveWorkout(payload) {
-  const dateKey = new Date().toISOString().split("T")[0];
+  const dateKey = toDateKey(new Date());
   const recordRef = push(ref(db, `workouts/${currentUserKey}/${dateKey}/${payload.category}/records`));
   await set(recordRef, payload);
 }
@@ -353,9 +355,10 @@ function renderWeeklyTable(weeklyData) {
   }
   weeklyTable.innerHTML = "";
   currentWeekDates.forEach((date) => {
-    const key = date.toISOString().split("T")[0];
+    const key = toDateKey(date);
     const dayName = date.toLocaleDateString(undefined, { weekday: "long" });
     const entry = weeklyData[key] || {};
+    const hasEntries = Object.keys(entry).length > 0;
 
     const row = document.createElement("tr");
     row.className = "border-t border-slate-800";
@@ -400,8 +403,48 @@ function renderWeeklyTable(weeklyData) {
     row.appendChild(dayCell);
     row.appendChild(dateCell);
     row.appendChild(completionCell);
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "py-3 text-right";
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.textContent = "Delete";
+    deleteButton.className = `text-xs px-3 py-1 rounded-full border transition ${
+      hasEntries
+        ? "border-rose-400/60 text-rose-300 hover:border-rose-300"
+        : "border-slate-700 text-slate-600 cursor-not-allowed"
+    }`;
+    deleteButton.disabled = !hasEntries;
+    deleteButton.addEventListener("click", async () => {
+      if (!hasEntries) {
+        return;
+      }
+      const ok = window.confirm(`Delete all logs for ${dayName} (${formatDate(date)})?`);
+      if (!ok) {
+        return;
+      }
+      await deleteDayEntry(key);
+    });
+    actionCell.appendChild(deleteButton);
+
+    row.appendChild(actionCell);
     weeklyTable.appendChild(row);
   });
+}
+
+async function deleteDayEntry(dateKey) {
+  if (!currentUserKey) {
+    return;
+  }
+  try {
+    await remove(ref(db, `workouts/${currentUserKey}/${dateKey}`));
+    await loadWeeklyData();
+  } catch (error) {
+    console.error(error);
+    if (formStatus) {
+      formStatus.textContent = "Delete failed. Check Firebase config.";
+    }
+  }
 }
 
 function buildTooltipContent(records) {
@@ -485,6 +528,11 @@ if (loginForm) {
       currentUserName = name;
       currentUserKey = safeKey(name);
       sessionStorage.setItem("ff_user", currentUserName);
+      if (rememberMe && rememberMe.checked) {
+        localStorage.setItem("ff_user_persist", currentUserName);
+      } else {
+        localStorage.removeItem("ff_user_persist");
+      }
       window.location.href = "app.html";
     } catch (error) {
       loginStatus.textContent = "Login failed. Check database rules.";
@@ -527,16 +575,23 @@ function boot() {
   const onAppPage = Boolean(weeklyTable);
 
   if (onLoginPage) {
+    const rememberedUser = localStorage.getItem("ff_user_persist");
+    if (rememberedUser) {
+      sessionStorage.setItem("ff_user", rememberedUser);
+      window.location.href = "app.html";
+      return;
+    }
     setAuthMode("signin");
     return;
   }
 
   if (onAppPage) {
-    const storedUser = sessionStorage.getItem("ff_user");
+    const storedUser = localStorage.getItem("ff_user_persist") || sessionStorage.getItem("ff_user");
     if (!storedUser) {
       window.location.href = "login.html";
       return;
     }
+    sessionStorage.setItem("ff_user", storedUser);
     currentUserName = storedUser;
     currentUserKey = safeKey(storedUser);
     if (userNameDisplay) {
@@ -794,6 +849,7 @@ if (loadCategorySelect) {
 if (logoutButton) {
   logoutButton.addEventListener("click", () => {
     sessionStorage.removeItem("ff_user");
+    localStorage.removeItem("ff_user_persist");
     window.location.href = "login.html";
   });
 }
