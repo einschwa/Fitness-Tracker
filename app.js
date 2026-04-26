@@ -242,7 +242,7 @@ if (logForm) {
 
     try {
       await saveWorkout(payload);
-      formStatus.textContent = "Saved. Keep pushing.";
+      formStatus.textContent = "Saved. Keep Pushing. Keep Lifting. Keep it up!";
       logForm.reset();
       await loadWeeklyData();
     } catch (error) {
@@ -372,7 +372,7 @@ function renderWeeklyTable(weeklyData) {
     dateCell.textContent = formatDate(date);
 
     const completionCell = document.createElement("td");
-    completionCell.className = "py-3";
+    completionCell.className = "py-3 overflow-visible";
 
     const categories = Object.keys(entry);
     if (categories.length === 0) {
@@ -390,7 +390,7 @@ function renderWeeklyTable(weeklyData) {
           <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-400/10 text-emerald-300 border border-emerald-400/30">
             ${category} <span class="text-xs uppercase">Done</span>
           </span>
-          <div class="tooltip-panel absolute z-20 mt-2 w-64 rounded-2xl bg-slate-950 border border-slate-700 p-3 text-xs text-slate-200 shadow-xl">
+          <div class="tooltip-panel absolute z-50 mt-2 w-64 rounded-2xl bg-slate-950 border border-slate-700 p-3 text-xs text-slate-200 shadow-xl">
             <p class="text-emerald-300 font-semibold mb-2">${category} - Details</p>
             ${tooltipContent}
           </div>
