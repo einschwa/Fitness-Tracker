@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ForgeFit Tracker | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="bg-atmo text-slate-100 min-h-screen">
+    <div class="max-w-6xl mx-auto px-6 py-10">
+      <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="uppercase tracking-[0.4em] text-emerald-300 text-xs">Fitness Tracker</p>
+          <h1 class="text-3xl md:text-4xl font-semibold">ForgeFit Weekly Log</h1>
+          <p class="text-slate-300 mt-2 max-w-xl">
+            Log workouts, track weekly consistency, and review cues for every movement with a crisp athletic dashboard.
+          </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div class="bg-slate-900/70 border border-emerald-400/20 px-5 py-3 rounded-2xl">
+            <p class="text-sm text-slate-300">Signed In</p>
+            <p id="userNameDisplay" class="text-lg font-semibold">--</p>
+          </div>
+          <div class="bg-slate-900/70 border border-emerald-400/20 px-5 py-3 rounded-2xl">
+            <p class="text-sm text-slate-300">Current Week</p>
+            <p id="weekRange" class="text-lg font-semibold">--</p>
+          </div>
+          <button
+            id="logoutButton"
+            type="button"
+            class="h-fit bg-slate-900/70 border border-rose-400/40 text-rose-300 px-5 py-3 rounded-2xl hover:border-rose-300 transition"
+          >
+            Log Out
+          </button>
+        </div>
+      </header>
+
+      <section class="mt-10 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="bg-slate-900/70 border border-emerald-400/10 rounded-2xl p-4">
+          <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Sessions Logged</p>
+          <p id="analyticsSessions" class="text-2xl font-semibold mt-2">0</p>
+        </div>
+        <div class="bg-slate-900/70 border border-emerald-400/10 rounded-2xl p-4">
+          <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Total Volume</p>
+          <p id="analyticsVolume" class="text-2xl font-semibold mt-2">0 kg</p>
+        </div>
+        <div class="bg-slate-900/70 border border-emerald-400/10 rounded-2xl p-4">
+          <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Total Sets</p>
+          <p id="analyticsSets" class="text-2xl font-semibold mt-2">0</p>
+        </div>
+        <div class="bg-slate-900/70 border border-emerald-400/10 rounded-2xl p-4">
+          <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Top Category</p>
+          <p id="analyticsTopCategory" class="text-2xl font-semibold mt-2">--</p>
+        </div>
+      </section>
+
+      <section class="mt-8 bg-slate-900/70 border border-emerald-400/10 rounded-3xl p-6 glow-card">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 class="text-xl font-semibold">Load Trend</h2>
+            <p class="text-sm text-slate-300 mt-1">Track total load over time by category and window.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="text-sm text-slate-300">
+              Time Window
+              <select
+                id="loadRangeSelect"
+                class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100"
+              >
+                <option value="month">Last 30 Days</option>
+                <option value="year">Last 12 Months</option>
+              </select>
+            </label>
+            <label class="text-sm text-slate-300">
+              Category
+              <select
+                id="loadCategorySelect"
+                class="mt-1 w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-slate-100"
+              >
+                <option value="ALL">All Categories</option>
+                <option value="PULL">PULL</option>
+                <option value="PUSH">PUSH</option>
+                <option value="LEG + CORE">LEG + CORE</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="mt-6 h-72">
+          <canvas id="loadChart"></canvas>
+        </div>
+      </section>
+
+      <main class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 mt-8">
+        <section class="bg-slate-900/70 border border-emerald-400/10 rounded-3xl p-6 glow-card">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Daily Logging Form</h2>
+            <span class="text-xs text-emerald-300 uppercase tracking-[0.3em]">Section A</span>
+          </div>
+
+          <div class="mt-6">
+            <p class="text-sm text-slate-300 mb-3">Choose a training category</p>
+            <div id="categoryButtons" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
+          </div>
+
+          <div class="mt-6">
+            <label class="block text-sm text-slate-300 mb-2">Exercise Selection</label>
+            <select
+              id="exerciseSelect"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            ></select>
+          </div>
+
+          <div id="exerciseCard" class="mt-6 bg-slate-950 border border-slate-800 rounded-2xl p-5">
+            <p class="text-slate-400">Pick a category and exercise to see details.</p>
+          </div>
+
+          <form id="logForm" class="mt-6 grid gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm text-slate-300 mb-1">Weight (kg)</label>
+                <input
+                  id="weightInput"
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+                  placeholder="e.g. 60"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-sm text-slate-300 mb-1">Sets</label>
+                <input
+                  id="setsInput"
+                  type="number"
+                  min="1"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+                  placeholder="e.g. 4"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-sm text-slate-300 mb-1">Reps</label>
+                <input
+                  id="repsInput"
+                  type="number"
+                  min="1"
+                  class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+                  placeholder="e.g. 8"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm text-slate-300 mb-1">Short Notes / Review</label>
+              <textarea
+                id="notesInput"
+                rows="3"
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+                placeholder="Energy, form notes, PRs, etc."
+              ></textarea>
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-emerald-400 text-slate-950 font-semibold px-6 py-3 rounded-xl hover:bg-emerald-300 transition"
+            >
+              Save Workout to Firebase
+            </button>
+            <p id="formStatus" class="text-sm text-emerald-300"></p>
+          </form>
+        </section>
+
+        <section class="bg-slate-900/70 border border-emerald-400/10 rounded-3xl p-6 glow-card">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Weekly Track Record</h2>
+            <span class="text-xs text-emerald-300 uppercase tracking-[0.3em]">Section B</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between gap-3">
+            <button
+              id="prevWeekButton"
+              type="button"
+              class="bg-slate-950 border border-slate-700 px-4 py-2 rounded-xl text-sm text-slate-200 hover:border-emerald-300 transition"
+            >
+              Previous Week
+            </button>
+            <p id="trackWeekLabel" class="text-sm text-slate-300 text-center">--</p>
+            <button
+              id="nextWeekButton"
+              type="button"
+              class="bg-slate-950 border border-slate-700 px-4 py-2 rounded-xl text-sm text-slate-200 hover:border-emerald-300 transition"
+            >
+              Next Week
+            </button>
+          </div>
+          <div class="overflow-x-auto mt-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-slate-400">
+                  <th class="pb-3">Day</th>
+                  <th class="pb-3">Date</th>
+                  <th class="pb-3">Completion</th>
+                </tr>
+              </thead>
+              <tbody id="weeklyTable"></tbody>
+            </table>
+          </div>
+          <p class="text-xs text-slate-400 mt-4">Hover over the completion tags to review exercise details.</p>
+        </section>
+      </main>
+    </div>
+
+    <script src="./firebase-config.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

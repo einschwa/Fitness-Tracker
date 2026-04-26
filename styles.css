@@ -1,0 +1,23 @@
+:root {
+  color-scheme: dark;
+}
+body {
+  font-family: "Space Grotesk", sans-serif;
+}
+.bg-atmo {
+  background: radial-gradient(circle at top, #16232b 0%, #0b1216 45%, #050709 100%);
+}
+.glow-card {
+  box-shadow: 0 0 0 1px rgba(62, 255, 168, 0.08), 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+.tooltip-panel {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 200ms ease;
+}
+.tooltip-trigger:hover .tooltip-panel {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}

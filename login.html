@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ForgeFit Tracker | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="bg-atmo text-slate-100 min-h-screen">
+    <div class="min-h-screen flex items-center justify-center px-6 py-12">
+      <div class="max-w-md w-full bg-slate-900/80 border border-emerald-400/10 rounded-3xl p-8 glow-card">
+        <p class="uppercase tracking-[0.4em] text-emerald-300 text-xs">ForgeFit Access</p>
+        <h1 class="text-3xl font-semibold mt-3">Welcome Back</h1>
+        <p class="text-slate-300 mt-2">
+          Log in with your name and the shared passphrase to open your training dashboard.
+        </p>
+        <div class="mt-6 inline-flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-full p-1">
+          <button
+            id="modeSignIn"
+            type="button"
+            class="px-4 py-2 rounded-full text-sm font-semibold bg-emerald-400 text-slate-950"
+          >
+            Sign In
+          </button>
+          <button
+            id="modeRegister"
+            type="button"
+            class="px-4 py-2 rounded-full text-sm font-semibold text-slate-300"
+          >
+            Register
+          </button>
+        </div>
+
+        <form id="loginForm" class="mt-6 grid gap-4">
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Name</label>
+            <input
+              id="loginName"
+              type="text"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+              placeholder="e.g. Alex"
+              required
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300 mb-1">Password</label>
+            <input
+              id="loginPassword"
+              type="password"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+              placeholder="Shared password"
+              required
+            />
+          </div>
+          <div id="confirmPasswordWrap" class="hidden">
+            <label class="block text-sm text-slate-300 mb-1">Confirm Password</label>
+            <input
+              id="loginPasswordConfirm"
+              type="password"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3"
+              placeholder="Repeat password"
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-emerald-400 text-slate-950 font-semibold px-6 py-3 rounded-xl hover:bg-emerald-300 transition"
+          >
+            Continue
+          </button>
+          <p id="loginStatus" class="text-sm text-emerald-300"></p>
+        </form>
+      </div>
+    </div>
+
+    <script src="./firebase-config.js"></script>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
