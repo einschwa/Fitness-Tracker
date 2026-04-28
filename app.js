@@ -9,6 +9,26 @@ import {
   remove,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+// ============================================
+// SERVICE WORKER REGISTRATION (PWA Support)
+// ============================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('[PWA] Service Worker registered successfully:', registration);
+        
+        // Check for updates periodically
+        setInterval(() => {
+          registration.update();
+        }, 60000); // Check every minute
+      })
+      .catch(error => {
+        console.warn('[PWA] Service Worker registration failed:', error);
+      });
+  });
+}
+
 const workoutPlan = {
   "PULL": {
     muscleFocus: "Back, Biceps, Rear Delts, Hamstrings",
