@@ -17,12 +17,15 @@
   <body class="bg-atmo text-slate-100 min-h-screen">
     <div class="max-w-6xl mx-auto px-6 py-10">
       <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p class="uppercase tracking-[0.4em] text-emerald-300 text-xs">Fitness Tracker</p>
-          <h1 class="text-3xl md:text-4xl font-semibold">ForgeFit Weekly Log</h1>
-          <p class="text-slate-300 mt-2 max-w-xl">
-            Log workouts, track weekly consistency, and review cues for every movement with a crisp athletic dashboard.
-          </p>
+        <div class="flex items-start gap-4 md:items-center">
+          <img src="./assets/training.png" alt="ForgeFit Logo" class="w-16 h-16 md:w-20 md:h-20 object-contain flex-shrink-0">
+          <div>
+            <p class="uppercase tracking-[0.4em] text-emerald-300 text-xs">Fitness Tracker</p>
+            <h1 class="text-3xl md:text-4xl font-semibold">ForgeFit Weekly Log</h1>
+            <p class="text-slate-300 mt-2 max-w-xl text-sm">
+              Log workouts, track weekly consistency, and review cues for every movement with a crisp athletic dashboard.
+            </p>
+          </div>
         </div>
         <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
           <div class="bg-slate-900/70 border border-emerald-400/20 px-5 py-3 rounded-2xl">
@@ -65,10 +68,10 @@
       <section class="mt-8 bg-slate-900/70 border border-emerald-400/10 rounded-3xl p-6 glow-card">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 class="text-xl font-semibold">Load Trend</h2>
-            <p class="text-sm text-slate-300 mt-1">Track total load over time by category and window.</p>
+            <h2 class="text-xl font-semibold">Exercise Performance Trends</h2>
+            <p class="text-sm text-slate-300 mt-1">Track individual exercise performance over time. View weight or total reps per exercise.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label class="text-sm text-slate-300">
               Time Window
               <select
@@ -90,6 +93,25 @@
                 <option value="PUSH">PUSH</option>
                 <option value="LEG + CORE">LEG + CORE</option>
               </select>
+            </label>
+            <label class="text-sm text-slate-300">
+              Metric
+              <div class="mt-1 flex gap-2">
+                <button
+                  id="loadTypeWeight"
+                  type="button"
+                  class="flex-1 bg-emerald-400 text-slate-950 border border-emerald-400 px-3 py-2 rounded-xl font-medium transition"
+                >
+                  Weight
+                </button>
+                <button
+                  id="loadTypeSetReps"
+                  type="button"
+                  class="flex-1 bg-slate-950 text-slate-300 border border-slate-700 px-3 py-2 rounded-xl font-medium hover:border-emerald-300 transition"
+                >
+                  Sets×Reps
+                </button>
+              </div>
             </label>
           </div>
         </div>

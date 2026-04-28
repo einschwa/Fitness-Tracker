@@ -177,6 +177,8 @@ const trackWeekLabel = document.getElementById("trackWeekLabel");
 const loadRangeSelect = document.getElementById("loadRangeSelect");
 const loadCategorySelect = document.getElementById("loadCategorySelect");
 const loadChartCanvas = document.getElementById("loadChart");
+const loadTypeWeight = document.getElementById("loadTypeWeight");
+const loadTypeSetReps = document.getElementById("loadTypeSetReps");
 
 const logForm = document.getElementById("logForm");
 const weightInput = document.getElementById("weightInput");
@@ -193,6 +195,7 @@ let weekOffset = 0;
 let currentWeekDates = [];
 let allWorkoutData = {};
 let loadChartInstance = null;
+let loadChartType = "weight"; // "weight" or "setReps"
 
 const firebaseApp = initializeApp(window.firebaseConfig);
 const db = getDatabase(firebaseApp);
@@ -644,10 +647,8 @@ function parseDateKey(dateKey) {
 }
 
 function computeRecordLoad(record) {
-  const sets = Number(record.sets || 0);
-  const reps = Number(record.reps || 0);
   const weight = Number(record.weightKg || 0);
-  return sets * reps * weight;
+  return weight;
 }
 
 function renderLoadChart() {
@@ -657,8 +658,17 @@ function renderLoadChart() {
 
   const range = loadRangeSelect ? loadRangeSelect.value : "month";
   const category = loadCategorySelect ? loadCategorySelect.value : "ALL";
-  const series = buildLoadSeries(range, category);
-  const label = category === "ALL" ? "All Categories Load" : `${category} Load`;
+
+  let chartData;
+  let yLabel;
+
+  if (loadChartType === "weight") {
+    chartData = buildLoadSeriesByExercise(range, category);
+    yLabel = "Weight (kg)";
+  } else {
+    chartData = buildSetRepsSeriesByExercise(range, category);
+    yLabel = "Sets × Reps";
+  }
 
   if (loadChartInstance) {
     loadChartInstance.destroy();
@@ -667,19 +677,8 @@ function renderLoadChart() {
   loadChartInstance = new Chart(loadChartCanvas, {
     type: "line",
     data: {
-      labels: series.labels,
-      datasets: [
-        {
-          label,
-          data: series.values,
-          borderColor: "#34d399",
-          backgroundColor: "rgba(52, 211, 153, 0.2)",
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3,
-          pointRadius: range === "month" ? 2 : 3,
-        },
-      ],
+      labels: chartData.labels,
+      datasets: chartData.datasets,
     },
     options: {
       responsive: true,
@@ -689,6 +688,7 @@ function renderLoadChart() {
           labels: {
             color: "#cbd5e1",
           },
+          position: "top",
         },
       },
       scales: {
@@ -705,7 +705,13 @@ function renderLoadChart() {
           beginAtZero: true,
           ticks: {
             color: "#94a3b8",
-            callback: (value) => `${Number(value).toLocaleString()} kg`,
+            callback: (value) => {
+              if (loadChartType === "weight") {
+                return `${Number(value).toLocaleString()} kg`;
+              } else {
+                return `${Number(value).toLocaleString()}`;
+              }
+            },
           },
           grid: {
             color: "rgba(148, 163, 184, 0.15)",
@@ -714,6 +720,182 @@ function renderLoadChart() {
       },
     },
   });
+}
+
+function buildLoadSeriesByExercise(range, category) {
+  const now = new Date();
+  const exerciseColors = [
+    "#34d399", // emerald
+    "#60a5fa", // blue
+    "#f87171", // red
+    "#fbbf24", // amber
+    "#a78bfa", // violet
+    "#fb7185", // rose
+  ];
+
+  // Get exercises for the category
+  let exercisesInCategory = [];
+  if (category === "ALL") {
+    Object.values(workoutPlan).forEach((plan) => {
+      exercisesInCategory = exercisesInCategory.concat(plan.exercises.map((e) => e.name));
+    });
+  } else {
+    exercisesInCategory = workoutPlan[category].exercises.map((e) => e.name);
+  }
+
+  const labels = [];
+  const dataByExercise = {};
+
+  // Initialize data structure for each exercise
+  exercisesInCategory.forEach((exerciseName) => {
+    dataByExercise[exerciseName] = [];
+  });
+
+  if (range === "year") {
+    for (let i = 11; i >= 0; i -= 1) {
+      const bucketDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const keyPrefix = `${bucketDate.getFullYear()}-${String(bucketDate.getMonth() + 1).padStart(2, "0")}`;
+
+      exercisesInCategory.forEach((exerciseName) => {
+        let exerciseLoad = 0;
+        Object.entries(allWorkoutData).forEach(([dateKey, dateEntry]) => {
+          if (!dateKey.startsWith(keyPrefix)) {
+            return;
+          }
+          exerciseLoad += computeExerciseLoadInDay(dateEntry, category, exerciseName);
+        });
+        dataByExercise[exerciseName].push(Math.round(exerciseLoad));
+      });
+
+      labels.push(bucketDate.toLocaleDateString(undefined, { month: "short", year: "2-digit" }));
+    }
+  } else {
+    for (let i = 29; i >= 0; i -= 1) {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dateKey = toDateKey(day);
+      const dayEntry = allWorkoutData[dateKey] || {};
+
+      exercisesInCategory.forEach((exerciseName) => {
+        const exerciseLoad = computeExerciseLoadInDay(dayEntry, category, exerciseName);
+        dataByExercise[exerciseName].push(Math.round(exerciseLoad));
+      });
+
+      labels.push(day.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    }
+  }
+
+  // Convert to datasets format
+  const datasets = exercisesInCategory.map((exerciseName, idx) => ({
+    label: exerciseName,
+    data: dataByExercise[exerciseName],
+    borderColor: exerciseColors[idx % exerciseColors.length],
+    backgroundColor: exerciseColors[idx % exerciseColors.length] + "33",
+    borderWidth: 2,
+    fill: true,
+    tension: 0.3,
+    pointRadius: range === "month" ? 2 : 3,
+  }));
+
+  return { labels, datasets };
+}
+
+function buildSetRepsSeriesByExercise(range, category) {
+  const now = new Date();
+  const exerciseColors = [
+    "#34d399", // emerald
+    "#60a5fa", // blue
+    "#f87171", // red
+    "#fbbf24", // amber
+    "#a78bfa", // violet
+    "#fb7185", // rose
+  ];
+
+  // Get exercises for the category
+  let exercisesInCategory = [];
+  if (category === "ALL") {
+    Object.values(workoutPlan).forEach((plan) => {
+      exercisesInCategory = exercisesInCategory.concat(plan.exercises.map((e) => e.name));
+    });
+  } else {
+    exercisesInCategory = workoutPlan[category].exercises.map((e) => e.name);
+  }
+
+  const labels = [];
+  const dataByExercise = {};
+
+  // Initialize data structure for each exercise
+  exercisesInCategory.forEach((exerciseName) => {
+    dataByExercise[exerciseName] = [];
+  });
+
+  if (range === "year") {
+    for (let i = 11; i >= 0; i -= 1) {
+      const bucketDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const keyPrefix = `${bucketDate.getFullYear()}-${String(bucketDate.getMonth() + 1).padStart(2, "0")}`;
+
+      exercisesInCategory.forEach((exerciseName) => {
+        let exerciseSetReps = 0;
+        Object.entries(allWorkoutData).forEach(([dateKey, dateEntry]) => {
+          if (!dateKey.startsWith(keyPrefix)) {
+            return;
+          }
+          exerciseSetReps += computeExerciseSetRepsInDay(dateEntry, category, exerciseName);
+        });
+        dataByExercise[exerciseName].push(Math.round(exerciseSetReps));
+      });
+
+      labels.push(bucketDate.toLocaleDateString(undefined, { month: "short", year: "2-digit" }));
+    }
+  } else {
+    for (let i = 29; i >= 0; i -= 1) {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const dateKey = toDateKey(day);
+      const dayEntry = allWorkoutData[dateKey] || {};
+
+      exercisesInCategory.forEach((exerciseName) => {
+        const exerciseSetReps = computeExerciseSetRepsInDay(dayEntry, category, exerciseName);
+        dataByExercise[exerciseName].push(Math.round(exerciseSetReps));
+      });
+
+      labels.push(day.toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    }
+  }
+
+  // Convert to datasets format
+  const datasets = exercisesInCategory.map((exerciseName, idx) => ({
+    label: exerciseName,
+    data: dataByExercise[exerciseName],
+    borderColor: exerciseColors[idx % exerciseColors.length],
+    backgroundColor: exerciseColors[idx % exerciseColors.length] + "33",
+    borderWidth: 2,
+    fill: true,
+    tension: 0.3,
+    pointRadius: range === "month" ? 2 : 3,
+  }));
+
+  return { labels, datasets };
+}
+
+function computeExerciseLoadInDay(dayEntry, category, exerciseName) {
+  const categories = category === "ALL" ? Object.keys(dayEntry) : [category];
+  return categories.reduce((sum, categoryName) => {
+    const records = dayEntry[categoryName]?.records ? Object.values(dayEntry[categoryName].records) : [];
+    const exerciseRecords = records.filter((r) => r.exerciseName === exerciseName);
+    return sum + exerciseRecords.reduce((recSum, rec) => recSum + Number(rec.weightKg || 0), 0);
+  }, 0);
+}
+
+function computeExerciseSetRepsInDay(dayEntry, category, exerciseName) {
+  const categories = category === "ALL" ? Object.keys(dayEntry) : [category];
+  return categories.reduce((sum, categoryName) => {
+    const records = dayEntry[categoryName]?.records ? Object.values(dayEntry[categoryName].records) : [];
+    const exerciseRecords = records.filter((r) => r.exerciseName === exerciseName);
+    return sum + exerciseRecords.reduce((recSum, rec) => {
+      const sets = Number(rec.sets || 0);
+      const reps = Number(rec.reps || 0);
+      return recSum + sets * reps;
+    }, 0);
+  }, 0);
 }
 
 function buildLoadSeries(range, category) {
@@ -784,6 +966,7 @@ function setAnalytics(weeklyData) {
   let totalSessions = 0;
   let totalSets = 0;
   let totalVolume = 0;
+  let recordCount = 0;
   const categoryCounts = {};
 
   Object.values(weeklyData).forEach((day) => {
@@ -798,16 +981,21 @@ function setAnalytics(weeklyData) {
         const reps = Number(record.reps || 0);
         const weight = Number(record.weightKg || 0);
         totalSets += sets;
-        totalVolume += sets * reps * weight;
+        totalVolume += weight;
+        recordCount += 1;
       });
     });
   });
 
   const topCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
 
+  // Calculate averages
+  const avgVolume = recordCount > 0 ? Math.round(totalVolume / recordCount) : 0;
+  const avgSets = recordCount > 0 ? Math.round(totalSets / recordCount * 10) / 10 : 0;
+
   analyticsSessions.textContent = String(totalSessions);
-  analyticsSets.textContent = String(totalSets);
-  analyticsVolume.textContent = `${Math.round(totalVolume).toLocaleString()} kg`;
+  analyticsSets.textContent = String(avgSets);
+  analyticsVolume.textContent = `${avgVolume} kg`;
   analyticsTopCategory.textContent = topCategory ? topCategory[0] : "--";
 }
 
@@ -842,6 +1030,28 @@ if (loadRangeSelect) {
 
 if (loadCategorySelect) {
   loadCategorySelect.addEventListener("change", () => {
+    renderLoadChart();
+  });
+}
+
+if (loadTypeWeight) {
+  loadTypeWeight.addEventListener("click", () => {
+    loadChartType = "weight";
+    loadTypeWeight.classList.add("bg-emerald-400", "text-slate-950", "border-emerald-400");
+    loadTypeWeight.classList.remove("bg-slate-950", "text-slate-300", "border-slate-700");
+    loadTypeSetReps.classList.remove("bg-emerald-400", "text-slate-950", "border-emerald-400");
+    loadTypeSetReps.classList.add("bg-slate-950", "text-slate-300", "border-slate-700");
+    renderLoadChart();
+  });
+}
+
+if (loadTypeSetReps) {
+  loadTypeSetReps.addEventListener("click", () => {
+    loadChartType = "setReps";
+    loadTypeSetReps.classList.add("bg-emerald-400", "text-slate-950", "border-emerald-400");
+    loadTypeSetReps.classList.remove("bg-slate-950", "text-slate-300", "border-slate-700");
+    loadTypeWeight.classList.remove("bg-emerald-400", "text-slate-950", "border-emerald-400");
+    loadTypeWeight.classList.add("bg-slate-950", "text-slate-300", "border-slate-700");
     renderLoadChart();
   });
 }
